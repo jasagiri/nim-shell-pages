@@ -23,6 +23,7 @@ what this package adds.
 | SHPG-RUN-01 | A fixture is copied with each `_gitignore` renamed `.gitignore` and an empty `.git` directory at the root. |
 | SHPG-RUN-02 | A command runs with `sh -c` in the copy, under the fixed environment, with standard output, standard error and status kept apart. |
 | SHPG-RUN-03 | An example passes when its output and status match; a differing output, a differing status, or a second idempotent run that changes the tree fails and names the line. |
+| SHPG-RUN-04 | `checkExampleWith` checks an example as SHPG-RUN-03 states it, with every command (the example, its classic partner, both idempotence runs) run by the routine it is given; `checkExample` is `checkExampleWith` with the local `run`. |
 
 ## Container runner
 

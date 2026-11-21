@@ -1,4 +1,4 @@
-## E tests for docs/specification.md SHPG-RUN-01…03: running an example in a fresh copy of a
+## E tests for docs/specification.md SHPG-RUN-01…04: running an example in a fresh copy of a
 ## fixture tree under the fixed environment.
 
 import std/[os, strutils, unittest]
@@ -57,3 +57,38 @@ suite "runner":
     check checkExample(fixture, work, stable).ok
     let drift = exampleOf("# T\n## Why\n```sh idempotent\necho x >> log\n```\n```text\n```\n")
     check "second run changed the tree" in checkExample(fixture, work, drift).message
+
+var ranCommands: seq[string]  ## outside the work tree, which the idempotence check compares
+
+proc fakeRun(work, command: string): RunResult {.raises: [OSError, IOError].} =
+  ## A runner that does not start a process: it answers `fake` and records the command, so a
+  ## test can tell which routine ran.
+  ranCommands.add command.strip
+  RunResult(stdout: "fake\n", stderr: "", exitCode: 0)
+
+suite "runner with another run routine":
+  # SPEC: SHPG-RUN-04
+  test "SHPG-RUN-04 Given a run routine, when an example is checked with it, then the routine decides the output and the local run is not used":
+    makeFixture()
+    let viaFake = exampleOf("# T\n## Why\n```sh\ncat a.txt\n```\n```text\nfake\n```\n")
+    check checkExampleWith(fixture, work, viaFake, fakeRun).ok
+    check not checkExample(fixture, work, viaFake).ok
+    let local = exampleOf("# T\n## Why\n```sh\ncat a.txt\n```\n```text\nalpha\n```\n")
+    check not checkExampleWith(fixture, work, local, fakeRun).ok
+
+  # SPEC: SHPG-RUN-04
+  test "SHPG-RUN-04 Given a classic pair and an idempotent example, when checked with a routine, then every run goes through it":
+    makeFixture()
+    ranCommands = @[]
+    let pair = exampleOf("# T\n## Why\n```sh classic\nls\n```\n```sh idempotent\nmkdir -p d\n```\n```text\nfake\n```\n")
+    check checkExampleWith(fixture, work, pair, fakeRun).ok
+    check ranCommands == @["mkdir -p d", "ls", "mkdir -p d", "mkdir -p d"]
+
+  # SPEC: SHPG-RUN-04
+  test "SHPG-RUN-04 Given a closure that holds its own settings, when an example is checked with it, then the settings reach the command":
+    makeFixture()
+    let suffix = "!"
+    let withSuffix = proc (w, command: string): RunResult {.closure, raises: [OSError, IOError].} =
+      RunResult(stdout: command.strip & suffix & "\n", stderr: "", exitCode: 0)
+    let ex = exampleOf("# T\n## Why\n```sh\nhello\n```\n```text\nhello!\n```\n")
+    check checkExampleWith(fixture, work, ex, withSuffix).ok

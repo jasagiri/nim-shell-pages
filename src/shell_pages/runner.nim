@@ -10,6 +10,10 @@ type
     stderr*: string
     exitCode*: int
 
+  RunRoutine* = proc (work, command: string): RunResult {.closure, raises: [OSError, IOError].}
+    ## Runs `command` with `work` as its working directory: `run` here, `runInContainer` in
+    ## container.nim through a closure that fixes the image and capabilities.
+
   Outcome* = object
     ok*: bool
     message*: string  ## why it failed, with the expected and actual output
@@ -64,10 +68,10 @@ proc snapshot*(dir: string): seq[(string, string)] {.raises: [OSError, IOError].
     result.add (f, readFile(dir / f))
   result.sort()
 
-proc check1(work, fixture: string; cmd: CodeBlock; ex: Example; label: string): Outcome
-    {.raises: [OSError, IOError].} =
+proc check1(work, fixture: string; cmd: CodeBlock; ex: Example; label: string;
+    runCmd: RunRoutine): Outcome {.raises: [OSError, IOError].} =
   copyFixture(fixture, work)
-  let r = run(work, cmd.body)
+  let r = runCmd(work, cmd.body)
   if r.exitCode != ex.exitCode:
     return Outcome(ok: false, message: label & " line " & $cmd.line & ": exit " & $r.exitCode &
       ", expected " & $ex.exitCode & "\nstderr:\n" & r.stderr)
@@ -77,22 +81,23 @@ proc check1(work, fixture: string; cmd: CodeBlock; ex: Example; label: string): 
       "--- stderr\n" & r.stderr)
   Outcome(ok: true, message: "")
 
-proc checkExample*(fixture, work: string; ex: Example): Outcome {.raises: [OSError, IOError].} =
+proc checkExampleWith*(fixture, work: string; ex: Example; runCmd: RunRoutine): Outcome
+    {.raises: [OSError, IOError].} =
   ## One example: its output, its status, its classic counterpart and its
-  ## idempotence. work is removed and recreated for every run.
-  result = check1(work, fixture, ex.command, ex, "command")
+  ## idempotence, every command run by runCmd. work is removed and recreated for every run.
+  result = check1(work, fixture, ex.command, ex, "command", runCmd)
   if not result.ok: return
   if ex.classic.isSome:
-    result = check1(work, fixture, ex.classic.get, ex, "classic")
+    result = check1(work, fixture, ex.classic.get, ex, "classic", runCmd)
     if not result.ok: return
   if ex.idempotent:
     copyFixture(fixture, work)
-    let first = run(work, ex.command.body)
+    let first = runCmd(work, ex.command.body)
     if first.exitCode != ex.exitCode:
       return Outcome(ok: false, message: "idempotent line " & $ex.command.line &
         ": first run exit " & $first.exitCode)
     let once = snapshot(work)
-    let second = run(work, ex.command.body)
+    let second = runCmd(work, ex.command.body)
     if second.exitCode != ex.exitCode:
       return Outcome(ok: false, message: "idempotent line " & $ex.command.line &
         ": second run exit " & $second.exitCode)
@@ -100,3 +105,7 @@ proc checkExample*(fixture, work: string; ex: Example): Outcome {.raises: [OSErr
       return Outcome(ok: false, message: "idempotent line " & $ex.command.line &
         ": a second run changed the tree")
   result = Outcome(ok: true, message: "")
+
+proc checkExample*(fixture, work: string; ex: Example): Outcome {.raises: [OSError, IOError].} =
+  ## checkExampleWith the local `run`.
+  checkExampleWith(fixture, work, ex, run)
