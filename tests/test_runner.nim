@@ -72,11 +72,13 @@ suite "runner":
     check "second run changed the tree" in checkExample(fixture, work, drift).message
 
 var ranCommands: seq[string]  ## outside the work tree, which the idempotence check compares
+var ranDirs: seq[string]
 
 proc fakeRun(work, command: string): RunResult {.raises: [OSError, IOError].} =
   ## A runner that does not start a process: it answers `fake` and records the command, so a
   ## test can tell which routine ran.
   ranCommands.add command.strip
+  ranDirs.add work
   RunResult(stdout: "fake\n", stderr: "", exitCode: 0)
 
 suite "runner with another run routine":
@@ -96,6 +98,20 @@ suite "runner with another run routine":
     let pair = exampleOf("# T\n## Why\n```sh classic\nls\n```\n```sh idempotent\nmkdir -p d\n```\n```text\nfake\n```\n")
     check checkExampleWith(fixture, work, pair, fakeRun).ok
     check ranCommands == @["mkdir -p d", "ls", "mkdir -p d", "mkdir -p d"]
+
+  # SPEC: SHPG-RUN-06
+  test "SHPG-RUN-06 Given a classic pair and an idempotent example, when checked, then each fresh copy is in a new directory and the idempotence runs share one":
+    makeFixture()
+    ranDirs = @[]
+    let pair = exampleOf("# T\n## Why\n```sh classic\nls\n```\n```sh idempotent\nmkdir -p d\n```\n```text\nfake\n```\n")
+    check checkExampleWith(fixture, work, pair, fakeRun).ok
+    check ranDirs.len == 4
+    check ranDirs[0] != ranDirs[1]
+    check ranDirs[2] notin [ranDirs[0], ranDirs[1]]
+    check ranDirs[2] == ranDirs[3]
+    for d in ranDirs:
+      check d.startsWith(work)
+      check not dirExists(d)
 
   # SPEC: SHPG-RUN-04
   test "SHPG-RUN-04 Given a closure that holds its own settings, when an example is checked with it, then the settings reach the command":

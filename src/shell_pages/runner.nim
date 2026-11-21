@@ -123,10 +123,21 @@ proc snapshot*(dir: string): seq[(string, string)] {.raises: [OSError, IOError].
     result.add (f, readFile(dir / f))
   result.sort()
 
+proc freshCopy(fixture, base: string): string {.raises: [OSError, IOError].} =
+  ## A copy of fixture in a directory under base that no earlier run has used. A container
+  ## runtime that shares host directories into a virtual machine (podman machine on macOS) can
+  ## keep a stale view of a path that was emptied or made again, so every run gets a new path.
+  createDir(base)
+  var n = int64(epochTime() * 1_000_000)
+  while dirExists(base / ("run-" & $n)): inc n
+  result = base / ("run-" & $n)
+  copyFixture(fixture, result)
+
 proc check1(work, fixture: string; cmd: CodeBlock; ex: Example; label: string;
     runCmd: RunRoutine): Outcome {.raises: [OSError, IOError].} =
-  copyFixture(fixture, work)
-  let r = runCmd(work, cmd.body)
+  let dir = freshCopy(fixture, work)
+  defer: removeDir(dir)
+  let r = runCmd(dir, cmd.body)
   if r.exitCode != ex.exitCode:
     return Outcome(ok: false, message: label & " line " & $cmd.line & ": exit " & $r.exitCode &
       ", expected " & $ex.exitCode & "\nstderr:\n" & r.stderr)
@@ -139,24 +150,26 @@ proc check1(work, fixture: string; cmd: CodeBlock; ex: Example; label: string;
 proc checkExampleWith*(fixture, work: string; ex: Example; runCmd: RunRoutine): Outcome
     {.raises: [OSError, IOError].} =
   ## One example: its output, its status, its classic counterpart and its
-  ## idempotence, every command run by runCmd. work is removed and recreated for every run.
+  ## idempotence, every command run by runCmd. Each run gets a fresh copy of fixture in a new
+  ## directory under work (freshCopy); the two idempotence runs share one copy.
   result = check1(work, fixture, ex.command, ex, "command", runCmd)
   if not result.ok: return
   if ex.classic.isSome:
     result = check1(work, fixture, ex.classic.get, ex, "classic", runCmd)
     if not result.ok: return
   if ex.idempotent:
-    copyFixture(fixture, work)
-    let first = runCmd(work, ex.command.body)
+    let dir = freshCopy(fixture, work)
+    defer: removeDir(dir)
+    let first = runCmd(dir, ex.command.body)
     if first.exitCode != ex.exitCode:
       return Outcome(ok: false, message: "idempotent line " & $ex.command.line &
         ": first run exit " & $first.exitCode)
-    let once = snapshot(work)
-    let second = runCmd(work, ex.command.body)
+    let once = snapshot(dir)
+    let second = runCmd(dir, ex.command.body)
     if second.exitCode != ex.exitCode:
       return Outcome(ok: false, message: "idempotent line " & $ex.command.line &
         ": second run exit " & $second.exitCode)
-    if snapshot(work) != once:
+    if snapshot(dir) != once:
       return Outcome(ok: false, message: "idempotent line " & $ex.command.line &
         ": a second run changed the tree")
   result = Outcome(ok: true, message: "")

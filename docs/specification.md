@@ -25,6 +25,7 @@ what this package adds.
 | SHPG-RUN-03 | An example passes when its output and status match; a differing output, a differing status, or a second idempotent run that changes the tree fails and names the line. |
 | SHPG-RUN-04 | `checkExampleWith` checks an example as SHPG-RUN-03 states it, with every command (the example, its classic partner, both idempotence runs) run by the routine it is given; `checkExample` is `checkExampleWith` with the local `run`. |
 | SHPG-RUN-05 | `run` (and every run, through `runBounded`) gives back standard output and error whole whatever their size, and stops a command still going after its time limit (`defaultTimeoutMs` = 120 s when not given) with status `timedOutExitCode` (1001) and `timed out` on standard error; a command that itself ends with 137 keeps 137. |
+| SHPG-RUN-06 | `checkExampleWith` gives every run its own fresh copy of the fixture in a directory under `work` that no earlier run used (the two idempotence runs share one copy), and removes it after the check: a container runtime that shares host directories into a virtual machine can keep a stale view of a reused path. |
 
 ## Container runner
 
