@@ -1,15 +1,14 @@
-## E tests for docs/specification.md SHPG-CONTAINER-01…06: running a command inside a podman
+## E tests for docs/specification.md SHPG-CONTAINER-01…10: running a command inside a podman
 ## container. Needs podman and the image below (pulled on first use).
 
-import std/[os, strutils, unittest]
+import std/[os, osproc, strutils, times, unittest]
 import shell_pages/[container, runner]
 
 const image = "docker.io/library/ubuntu:24.04"
 let work = getTempDir() / "shpg-container-" & $getCurrentProcessId()
 
 proc fresh(): string =
-  removeDir(work)
-  createDir(work)
+  resetDir(work)
   work
 
 suite "container":
@@ -36,6 +35,7 @@ suite "container":
   test "SHPG-CONTAINER-04 Given the work directory, when the command writes in it, then the files are visible on the host":
     let w = fresh()
     let r = runInContainer(image, w, "echo data > out.txt", [])
+    checkpoint "stderr: " & r.stderr
     check r.exitCode == 0
     check readFile(w / "out.txt") == "data\n"
 
@@ -71,3 +71,23 @@ suite "container":
     check runInContainer("--privileged", fresh(), "true", []).exitCode == refusedExitCode
     check runInContainer(image, "a:b", "true", []).exitCode == refusedExitCode
     check runInContainer(image, "a,b", "true", []).exitCode == refusedExitCode
+
+  # SPEC: SHPG-CONTAINER-09
+  test "SHPG-CONTAINER-09 Given a command that does not end, when the time limit passes, then the run stops with timedOutExitCode and no container is left":
+    let started = epochTime()
+    let r = runInContainer(image, fresh(), "echo started; sleep 600", [], timeoutMs = 5_000)
+    check r.exitCode == timedOutExitCode
+    check "timed out" in r.stderr
+    check epochTime() - started < 60.0
+    let (left, code) = execCmdEx("podman ps -a --filter ancestor=" & image &
+      " --filter status=running --format '{{.Command}}'")
+    check code == 0
+    check "sleep 600" notin left
+
+  # SPEC: SHPG-CONTAINER-10
+  test "SHPG-CONTAINER-10 Given more output than a pipe holds on both streams, when run, then all of it comes back":
+    let r = runInContainer(image, fresh(),
+      "head -c 300000 /dev/zero | tr '\\0' e >&2; head -c 300000 /dev/zero | tr '\\0' o", [])
+    check r.exitCode == 0
+    check r.stdout.len == 300000
+    check r.stderr.len == 300000

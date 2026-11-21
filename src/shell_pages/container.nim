@@ -7,7 +7,7 @@
 ## an exception is kept for what the caller cannot know in advance (podman missing, a pipe
 ## failing), as in runner.run.
 
-import std/[os, osproc, streams, strutils]
+import std/[os, strtabs, strutils, times]
 import ./runner
 
 const
@@ -27,14 +27,17 @@ func refusedCaps*(caps: openArray[string]): seq[string] {.raises: [].} =
 func refusal(message: string): RunResult {.raises: [].} =
   RunResult(stdout: "", stderr: "refused: " & message & "\n", exitCode: refusedExitCode)
 
-proc runInContainer*(image, work, command: string; caps: openArray[string]): RunResult
-    {.raises: [OSError, IOError].} =
+proc runInContainer*(image, work, command: string; caps: openArray[string];
+    timeoutMs = defaultTimeoutMs): RunResult {.raises: [OSError, IOError].} =
   ## `podman run --rm --network none` with work mounted at /work, the fixed environment, one
   ## `--cap-add` per entry of caps, and `/bin/sh -c command` with empty standard input; standard
   ## output and error kept apart, the status returned. A request podman would misread is
   ## answered with refusedExitCode and the reason on stderr, and podman is not started: a
   ## capability off the allowlist, an empty image or one starting with `-`, a work directory
   ## with `:` or `,` in it (they split the volume option).
+  ##
+  ## Output and the time limit are runBounded's: a run still going after timeoutMs is stopped,
+  ## podman is killed, the container is removed, and the status is timedOutExitCode.
   let bad = refusedCaps(caps)
   if bad.len > 0:
     return refusal("capability not on the allowlist (" & allowedCaps.join(" ") & "): " &
@@ -44,8 +47,14 @@ proc runInContainer*(image, work, command: string; caps: openArray[string]): Run
   if work.len == 0 or work.contains({':', ','}):
     return refusal("work directory `" & work & "` is empty or contains `:` or `,`")
   let hostWork = (if work.isAbsolute: work else: getCurrentDir() / work)
-  var args = @["run", "--rm", "--network", "none", "-v", hostWork & ":/work:Z",
-    "-w", "/work"]
+  let io = getTempDir() / ("shpg-cid-" & $getCurrentProcessId() & "-" &
+    $int64(epochTime() * 1_000_000))
+  removeDir(io)
+  createDir(io)
+  defer: removeDir(io)
+  let cidPath = io / "cid"
+  var args = @["run", "--rm", "--cidfile", cidPath, "--network", "none",
+    "-v", hostWork & ":/work:Z", "-w", "/work"]
   for (key, value) in fixedContainerEnv:
     args.add "-e"
     args.add key & "=" & value
@@ -56,16 +65,14 @@ proc runInContainer*(image, work, command: string; caps: openArray[string]): Run
   args.add "/bin/sh"
   args.add "-c"
   args.add "exec </dev/null\n" & command
-  let p = startProcess("podman", args = args, options = {poUsePath})
-  defer: p.close()
-  try:
-    p.inputStream.close()
-    result.stdout = p.outputStream.readAll()
-    result.stderr = p.errorStream.readAll()
-    result.exitCode = p.waitForExit()
-  except IOError as e:
-    raise e
-  except OSError as e:
-    raise e
-  except CatchableError as e:
-    raise newException(IOError, "reading the container's output: " & e.msg)
+  var env = newStringTable(modeCaseSensitive)
+  for key, value in envPairs():
+    env[key] = value
+  result = runBounded("podman", args, getCurrentDir(), env, timeoutMs)
+  if result.exitCode == timedOutExitCode and fileExists(cidPath):
+    # podman was killed; the container it made may still exist.
+    let cid = readFile(cidPath).strip
+    if cid.len > 0:
+      let rm = runBounded("podman", ["rm", "-f", cid], getCurrentDir(), env, defaultTimeoutMs)
+      if rm.exitCode != 0:
+        raise newException(IOError, "removing the timed-out container " & cid & ": " & rm.stderr)

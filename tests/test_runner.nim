@@ -1,7 +1,7 @@
 ## E tests for docs/specification.md SHPG-RUN-01…04: running an example in a fresh copy of a
 ## fixture tree under the fixed environment.
 
-import std/[os, strutils, unittest]
+import std/[os, strutils, times, unittest]
 import shell_pages/[pages, runner]
 import ./toy_profile
 
@@ -28,6 +28,19 @@ suite "runner":
     check fileExists(work / "sub" / ".gitignore")
     check not fileExists(work / "sub" / "_gitignore")
     check dirExists(work / ".git")
+    check readFile(work / "a.txt") == "alpha\n"
+
+  # SPEC: SHPG-RUN-01
+  test "SHPG-RUN-01 Given a used work directory, when the fixture is copied again, then the directory is kept and only its content is replaced":
+    makeFixture()
+    copyFixture(fixture, work)
+    writeFile(work / "left.txt", "x")
+    createDir(work / "made" / "deep")
+    let before = getFileInfo(work).id
+    copyFixture(fixture, work)
+    check getFileInfo(work).id == before
+    check not fileExists(work / "left.txt")
+    check not dirExists(work / "made")
     check readFile(work / "a.txt") == "alpha\n"
 
   # SPEC: SHPG-RUN-02
@@ -92,3 +105,27 @@ suite "runner with another run routine":
       RunResult(stdout: command.strip & suffix & "\n", stderr: "", exitCode: 0)
     let ex = exampleOf("# T\n## Why\n```sh\nhello\n```\n```text\nhello!\n```\n")
     check checkExampleWith(fixture, work, ex, withSuffix).ok
+
+suite "bounded runs":
+  # SPEC: SHPG-RUN-05
+  test "SHPG-RUN-05 Given a command that does not end, when its time limit passes, then it is stopped with timedOutExitCode":
+    let w = getTempDir() / "shpg-run05-" & $getCurrentProcessId()
+    createDir(w)
+    defer: removeDir(w)
+    let started = epochTime()
+    let r = run(w, "echo begun; sleep 30", timeoutMs = 500)
+    check r.exitCode == timedOutExitCode
+    check r.stdout == "begun\n"
+    check "timed out" in r.stderr
+    check epochTime() - started < 10.0
+    check run(w, "exit 137").exitCode == 137
+
+  # SPEC: SHPG-RUN-05
+  test "SHPG-RUN-05 Given more output than a pipe holds on both streams, when run, then all of it comes back":
+    let w = getTempDir() / "shpg-run05b-" & $getCurrentProcessId()
+    createDir(w)
+    defer: removeDir(w)
+    let r = run(w, "head -c 300000 /dev/zero | tr '\\0' e >&2; head -c 300000 /dev/zero | tr '\\0' o")
+    check r.exitCode == 0
+    check r.stdout.len == 300000
+    check r.stderr.len == 300000

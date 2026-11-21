@@ -1,7 +1,7 @@
 ## Running an example in a fresh copy of a fixture tree under a fixed environment.
 ## With container.nim, the only module that touches the file system and starts processes.
 
-import std/[algorithm, options, os, osproc, streams, strtabs, strutils]
+import std/[algorithm, options, os, osproc, strtabs, strutils, times]
 import ./pages
 
 type
@@ -18,10 +18,77 @@ type
     ok*: bool
     message*: string  ## why it failed, with the expected and actual output
 
+const
+  timedOutExitCode* = 1001
+    ## The status of a run stopped at its time limit. A process status is 0..255, so no real
+    ## run has it.
+  defaultTimeoutMs* = 120_000
+    ## The time limit of one run when the caller gives none: long enough for any example,
+    ## short enough that a command or a podman that never ends does not stall a test run.
+
+proc runBounded*(program: string; args: openArray[string]; workDir: string; env: StringTableRef;
+    timeoutMs: int): RunResult {.raises: [OSError, IOError].} =
+  ## program with args in workDir under env, standard input empty. Standard output and error go
+  ## to files, not pipes, so any amount of either comes back whole and kept apart. A run still
+  ## going after timeoutMs is killed and has status timedOutExitCode, with `timed out` on
+  ## standard error after what it printed.
+  let io = getTempDir() / ("shpg-run-" & $getCurrentProcessId() & "-" &
+    $int64(epochTime() * 1_000_000))
+  removeDir(io)
+  createDir(io)
+  defer: removeDir(io)
+  let outPath = io / "out"
+  let errPath = io / "err"
+  # The file names go in as positional parameters, so env stays exactly what the caller gave.
+  var shArgs = @["-c", "o=$1; e=$2; shift 2; exec \"$@\" </dev/null >\"$o\" 2>\"$e\"", "sh",
+    outPath, errPath, program]
+  for a in args: shArgs.add a
+  let p = startProcess("/bin/sh", workingDir = workDir, args = shArgs, env = env, options = {})
+  defer: p.close()
+  var timedOut = false
+  try:
+    # waitForExit(timeout) kills the process itself on timeout and reports 137, which a command
+    # can also end with; poll instead, so that a timeout is known as one.
+    let deadline = epochTime() + timeoutMs.float / 1000.0
+    var status = p.peekExitCode()
+    while status == -1 and epochTime() < deadline:
+      sleep(20)
+      status = p.peekExitCode()
+    if status == -1:
+      timedOut = true
+      p.kill()
+      status = p.waitForExit()
+    result.exitCode = status
+  except IOError as e:
+    raise e
+  except OSError as e:
+    raise e
+  except CatchableError as e:
+    raise newException(IOError, "waiting for " & program & ": " & e.msg)
+  result.stdout = (if fileExists(outPath): readFile(outPath) else: "")
+  result.stderr = (if fileExists(errPath): readFile(errPath) else: "")
+  if timedOut:
+    result.exitCode = timedOutExitCode
+    result.stderr.add "timed out after " & $timeoutMs & " ms\n"
+
+proc resetDir*(dir: string) {.raises: [OSError, IOError].} =
+  ## dir exists and is empty afterwards. An existing dir is emptied, not removed and made again:
+  ## a container runtime that shares host directories into a virtual machine (podman machine on
+  ## macOS) can keep the removed directory mounted, and the next run then sees no directory.
+  if not dirExists(dir):
+    createDir(dir)
+    return
+  for kind, path in walkDir(dir):
+    if kind == pcDir:
+      removeDir(path)
+    else:
+      removeFile(path)
+
 proc copyFixture*(fixture, dest: string) {.raises: [OSError, IOError].} =
   ## dest becomes a copy of fixture with every `_gitignore` renamed `.gitignore` and an empty
   ## `.git` directory at the root, so that tools that look for a repository root treat it as one.
-  removeDir(dest)
+  ## dest itself is kept (resetDir), only its content is replaced.
+  resetDir(dest)
   copyDirWithPermissions(fixture, dest)
   for f in walkDirRec(dest, yieldFilter = {pcFile}):
     if f.extractFilename == "_gitignore":
@@ -41,25 +108,13 @@ proc fixedEnv(work: string): StringTableRef {.raises: [].} =
   result["PAGER"] = "cat"
   result["BAT_PAGER"] = ""
 
-proc run*(work, command: string): RunResult {.raises: [OSError, IOError].} =
+proc run*(work, command: string; timeoutMs = defaultTimeoutMs): RunResult
+    {.raises: [OSError, IOError].} =
   ## `sh -c command` in work with empty standard input; standard output and error kept apart,
-  ## the status returned.
+  ## the status returned; stopped at timeoutMs as runBounded says.
   # Standard input is /dev/null, as for a command started from cron or CI: rg and others search
   # standard input when it is a pipe or a file and no path is given.
-  let p = startProcess("/bin/sh", workingDir = work, args = ["-c", "exec </dev/null\n" & command],
-    env = fixedEnv(work), options = {})
-  defer: p.close()
-  try:
-    p.inputStream.close()
-    result.stdout = p.outputStream.readAll()
-    result.stderr = p.errorStream.readAll()
-    result.exitCode = p.waitForExit()
-  except IOError as e:
-    raise e
-  except OSError as e:
-    raise e
-  except CatchableError as e:
-    raise newException(IOError, "reading the command's output: " & e.msg)
+  runBounded("/bin/sh", ["-c", "exec </dev/null\n" & command], work, fixedEnv(work), timeoutMs)
 
 proc snapshot*(dir: string): seq[(string, string)] {.raises: [OSError, IOError].} =
   ## Every file under dir (relative path, content), sorted; `.home` excluded.
@@ -108,4 +163,6 @@ proc checkExampleWith*(fixture, work: string; ex: Example; runCmd: RunRoutine): 
 
 proc checkExample*(fixture, work: string; ex: Example): Outcome {.raises: [OSError, IOError].} =
   ## checkExampleWith the local `run`.
-  checkExampleWith(fixture, work, ex, run)
+  let local: RunRoutine = proc (w, command: string): RunResult {.closure, raises: [OSError, IOError].} =
+    run(w, command)
+  checkExampleWith(fixture, work, ex, local)
