@@ -1,0 +1,464 @@
+{
+  "survivors": [
+    {
+      "fingerprint": "src/shell_pages/container.nim:AOR:3639fa30ebae35e2:0",
+      "file": "src/shell_pages/container.nim",
+      "line": 51,
+      "mutator": "AOR",
+      "original": "epochTime() * 1000000",
+      "replacement": "<* -> />",
+      "class": "equivalent",
+      "reason": "the temporary directory name only has to be unused; its time part is not observable, and pid plus microseconds already keeps it unique"
+    },
+    {
+      "fingerprint": "src/shell_pages/container.nim:CVR:52a96e4f2de8c144:0",
+      "file": "src/shell_pages/container.nim",
+      "line": 51,
+      "mutator": "CVR",
+      "original": "1000000",
+      "replacement": "1000001",
+      "class": "equivalent",
+      "reason": "the temporary directory name only has to be unused; its time part is not observable, and pid plus microseconds already keeps it unique"
+    },
+    {
+      "fingerprint": "src/shell_pages/container.nim:SDL:d4abb9630f833b4a:0",
+      "file": "src/shell_pages/container.nim",
+      "line": 52,
+      "mutator": "SDL",
+      "original": "removeDir(io)",
+      "replacement": "discard",
+      "class": "equivalent",
+      "reason": "removes a stale directory of the same name before creating it; pid plus microseconds never collides with an earlier one, so there is nothing to remove"
+    },
+    {
+      "fingerprint": "src/shell_pages/container.nim:SDL:ac6aeb2a864586b2:0",
+      "file": "src/shell_pages/container.nim",
+      "line": 54,
+      "mutator": "SDL",
+      "original": "removeDir(io)",
+      "replacement": "discard",
+      "class": "spec_question",
+      "reason": "no SHPG row says a container run leaves no temporary directory behind"
+    },
+    {
+      "fingerprint": "src/shell_pages/container.nim:LOR:bd1da42686afbb38:0",
+      "file": "src/shell_pages/container.nim",
+      "line": 72,
+      "mutator": "LOR",
+      "original": "result.exitCode == timedOutExitCode and fileExists(cidPath)",
+      "replacement": "<and -> or>",
+      "class": "unreached",
+      "reason": "same as the previous: with --rm the container is gone when the run times out, so whether rm -f runs cannot be observed"
+    },
+    {
+      "fingerprint": "src/shell_pages/container.nim:ROR:3bd41cfc1facb41c:0",
+      "file": "src/shell_pages/container.nim",
+      "line": 72,
+      "mutator": "ROR",
+      "original": "result.exitCode == timedOutExitCode",
+      "replacement": "<== -> !=>",
+      "class": "unreached",
+      "reason": "after podman is killed on timeout, --rm has already removed the container (checked: no container left in podman ps -a with the mutant); the rm -f is a safeguard this podman never needs"
+    },
+    {
+      "fingerprint": "src/shell_pages/container.nim:CVR:549a4f8a66cbd032:0",
+      "file": "src/shell_pages/container.nim",
+      "line": 75,
+      "mutator": "CVR",
+      "original": "0",
+      "replacement": "1",
+      "class": "unreached",
+      "reason": "a container id is 64 hex characters; length 1 needs the same race as the previous"
+    },
+    {
+      "fingerprint": "src/shell_pages/container.nim:ROR:c7279fddf4d246d5:0",
+      "file": "src/shell_pages/container.nim",
+      "line": 75,
+      "mutator": "ROR",
+      "original": "cid.len > 0",
+      "replacement": "<> -> >=>",
+      "class": "unreached",
+      "reason": "the cid file is empty only when podman is killed before writing it, a race the tests cannot arrange"
+    },
+    {
+      "fingerprint": "src/shell_pages/dataset.nim:CVR:521bba3171e9f2f5:0",
+      "file": "src/shell_pages/dataset.nim",
+      "line": 35,
+      "mutator": "CVR",
+      "original": "0",
+      "replacement": "1",
+      "class": "equivalent",
+      "reason": "same as the previous"
+    },
+    {
+      "fingerprint": "src/shell_pages/dataset.nim:ROR:a58c0fcd57e08ac3:0",
+      "file": "src/shell_pages/dataset.nim",
+      "line": 35,
+      "mutator": "ROR",
+      "original": "i >= 0",
+      "replacement": "<>= -> >>",
+      "class": "equivalent",
+      "reason": "when line 0 is reached and is empty the function returns the empty string, as the original does after the loop"
+    },
+    {
+      "fingerprint": "src/shell_pages/dataset.nim:CVR:a59382d0fcf010d0:0",
+      "file": "src/shell_pages/dataset.nim",
+      "line": 36,
+      "mutator": "CVR",
+      "original": "0",
+      "replacement": "1",
+      "class": "equivalent",
+      "reason": "same as the previous"
+    },
+    {
+      "fingerprint": "src/shell_pages/dataset.nim:ROR:062d5100680c1716:0",
+      "file": "src/shell_pages/dataset.nim",
+      "line": 36,
+      "mutator": "ROR",
+      "original": "i < 0",
+      "replacement": "<< -> <=>",
+      "class": "equivalent",
+      "reason": "a valid page's line 0 is its '# ' title, for which the heading lookup returns the empty string either way"
+    },
+    {
+      "fingerprint": "src/shell_pages/dataset.nim:RVR:9735eb8ac6857a50:0",
+      "file": "src/shell_pages/dataset.nim",
+      "line": 36,
+      "mutator": "RVR",
+      "original": "return \"\"",
+      "replacement": "<return default>",
+      "class": "equivalent",
+      "reason": "default(string) is the empty string the original returns"
+    },
+    {
+      "fingerprint": "src/shell_pages/dataset.nim:CVR:14730aa123c452ed:0",
+      "file": "src/shell_pages/dataset.nim",
+      "line": 46,
+      "mutator": "CVR",
+      "original": "0",
+      "replacement": "1",
+      "class": "spec_question",
+      "reason": "same as the previous"
+    },
+    {
+      "fingerprint": "src/shell_pages/dataset.nim:ROR:798e0027a4b951c3:0",
+      "file": "src/shell_pages/dataset.nim",
+      "line": 46,
+      "mutator": "ROR",
+      "original": "i < 0",
+      "replacement": "<< -> <=>",
+      "class": "spec_question",
+      "reason": "no row says how a title whose colon is the first character gives its tool (dataset side of the same question as spec.nim line 71)"
+    },
+    {
+      "fingerprint": "src/shell_pages/dataset.nim:CVR:89c9a86c4d04e713:0",
+      "file": "src/shell_pages/dataset.nim",
+      "line": 72,
+      "mutator": "CVR",
+      "original": "-1",
+      "replacement": "0",
+      "class": "equivalent",
+      "reason": "the initial value is never read: the loop that follows always assigns prev first"
+    },
+    {
+      "fingerprint": "src/shell_pages/dataset.nim:CVR:31c84b398a9783ca:0",
+      "file": "src/shell_pages/dataset.nim",
+      "line": 107,
+      "mutator": "CVR",
+      "original": "0",
+      "replacement": "1",
+      "class": "equivalent",
+      "reason": "the input is empty or a fenced block of at least 8 characters, never a single character"
+    },
+    {
+      "fingerprint": "src/shell_pages/pages.nim:CVR:0e34b7106ee90b6e:0",
+      "file": "src/shell_pages/pages.nim",
+      "line": 110,
+      "mutator": "CVR",
+      "original": "1",
+      "replacement": "2",
+      "class": "equivalent",
+      "reason": "same as the previous"
+    },
+    {
+      "fingerprint": "src/shell_pages/pages.nim:LBR:1ebd2fe8a0c28b56:0",
+      "file": "src/shell_pages/pages.nim",
+      "line": 110,
+      "mutator": "LBR",
+      "original": "statusPrefix.len .. ^1",
+      "replacement": "<.. -> ..<>",
+      "class": "equivalent",
+      "reason": "the dropped last character is the closing parenthesis, which strip removes anyway for a well-formed Status line"
+    },
+    {
+      "fingerprint": "src/shell_pages/pages.nim:CVR:290d1b6f7aa6f818:0",
+      "file": "src/shell_pages/pages.nim",
+      "line": 135,
+      "mutator": "CVR",
+      "original": "3",
+      "replacement": "4",
+      "class": "spec_question",
+      "reason": "MCLI-PAGE-03 does not say whether `# exit: 0001` (zero-padded, value in 0..255) is refused"
+    },
+    {
+      "fingerprint": "src/shell_pages/pages.nim:CVR:81f28a587c42ce58:0",
+      "file": "src/shell_pages/pages.nim",
+      "line": 158,
+      "mutator": "CVR",
+      "original": "0",
+      "replacement": "1",
+      "class": "equivalent",
+      "reason": "same as the previous"
+    },
+    {
+      "fingerprint": "src/shell_pages/pages.nim:ROR:d6933d61f0ae8ee4:0",
+      "file": "src/shell_pages/pages.nim",
+      "line": 158,
+      "mutator": "ROR",
+      "original": "nl < 0",
+      "replacement": "<< -> <=>",
+      "class": "equivalent",
+      "reason": "rest starts with '#', so the newline is never at index 0"
+    },
+    {
+      "fingerprint": "src/shell_pages/pages.nim:CVR:23da1303bd01c1a2:0",
+      "file": "src/shell_pages/pages.nim",
+      "line": 183,
+      "mutator": "CVR",
+      "original": "0",
+      "replacement": "1",
+      "class": "equivalent",
+      "reason": "the error is empty or a long message, never one character"
+    },
+    {
+      "fingerprint": "src/shell_pages/pages.nim:ROR:50c9a0ee46367b87:0",
+      "file": "src/shell_pages/pages.nim",
+      "line": 190,
+      "mutator": "ROR",
+      "original": "k == bkClassic",
+      "replacement": "<== -> !=>",
+      "class": "accepted",
+      "reason": "only the block name in the error text changes (sh classic or sh bad); failure wording is not part of the contract"
+    },
+    {
+      "fingerprint": "src/shell_pages/pages.nim:CVR:23da1303bd01c1a2:1",
+      "file": "src/shell_pages/pages.nim",
+      "line": 196,
+      "mutator": "CVR",
+      "original": "0",
+      "replacement": "1",
+      "class": "equivalent",
+      "reason": "the error is empty or a long message, never one character"
+    },
+    {
+      "fingerprint": "src/shell_pages/runner.nim:CVR:71ce2676aaedd6e4:0",
+      "file": "src/shell_pages/runner.nim",
+      "line": 25,
+      "mutator": "CVR",
+      "original": "120000",
+      "replacement": "120001",
+      "class": "accepted",
+      "reason": "defaultTimeoutMs is stated as 120 s in SHPG-RUN-05; telling 120000 from 120001 needs a 120-second test or a test that pins the constant, which the test rules do not allow"
+    },
+    {
+      "fingerprint": "src/shell_pages/runner.nim:AOR:3639fa30ebae35e2:0",
+      "file": "src/shell_pages/runner.nim",
+      "line": 36,
+      "mutator": "AOR",
+      "original": "epochTime() * 1000000",
+      "replacement": "<* -> />",
+      "class": "equivalent",
+      "reason": "the temporary directory name only has to be unused; its time part is not observable, and pid plus microseconds already keeps it unique"
+    },
+    {
+      "fingerprint": "src/shell_pages/runner.nim:CVR:52a96e4f2de8c144:0",
+      "file": "src/shell_pages/runner.nim",
+      "line": 36,
+      "mutator": "CVR",
+      "original": "1000000",
+      "replacement": "1000001",
+      "class": "equivalent",
+      "reason": "the temporary directory name only has to be unused; its time part is not observable, and pid plus microseconds already keeps it unique"
+    },
+    {
+      "fingerprint": "src/shell_pages/runner.nim:SDL:d4abb9630f833b4a:0",
+      "file": "src/shell_pages/runner.nim",
+      "line": 37,
+      "mutator": "SDL",
+      "original": "removeDir(io)",
+      "replacement": "discard",
+      "class": "equivalent",
+      "reason": "removes a stale directory of the same name before creating it; pid plus microseconds never collides with an earlier one, so there is nothing to remove"
+    },
+    {
+      "fingerprint": "src/shell_pages/runner.nim:SDL:ac6aeb2a864586b2:0",
+      "file": "src/shell_pages/runner.nim",
+      "line": 39,
+      "mutator": "SDL",
+      "original": "removeDir(io)",
+      "replacement": "discard",
+      "class": "spec_question",
+      "reason": "no SHPG row says a run leaves no temporary directory behind; killing this needs that promise (and a way to observe the directory)"
+    },
+    {
+      "fingerprint": "src/shell_pages/runner.nim:SDL:a4387596d8b361c8:0",
+      "file": "src/shell_pages/runner.nim",
+      "line": 47,
+      "mutator": "SDL",
+      "original": "p.close()",
+      "replacement": "discard",
+      "class": "spec_question",
+      "reason": "no SHPG row says the process handle (its file descriptors) is closed after a run"
+    },
+    {
+      "fingerprint": "src/shell_pages/runner.nim:ROR:e5e32a2f2c01db1e:0",
+      "file": "src/shell_pages/runner.nim",
+      "line": 54,
+      "mutator": "ROR",
+      "original": "epochTime() < deadline",
+      "replacement": "<< -> <=>",
+      "class": "equivalent",
+      "reason": "differs only at the instant the float clock equals the deadline, which a test cannot hit"
+    },
+    {
+      "fingerprint": "src/shell_pages/runner.nim:CVR:83230722dc5d91bd:0",
+      "file": "src/shell_pages/runner.nim",
+      "line": 55,
+      "mutator": "CVR",
+      "original": "20",
+      "replacement": "21",
+      "class": "equivalent",
+      "reason": "the poll interval only (20 or 21 ms), with the same result"
+    },
+    {
+      "fingerprint": "src/shell_pages/runner.nim:SDL:b4d003a1d030c2fc:0",
+      "file": "src/shell_pages/runner.nim",
+      "line": 55,
+      "mutator": "SDL",
+      "original": "sleep(20)",
+      "replacement": "discard",
+      "class": "equivalent",
+      "reason": "the poll interval only; without the sleep the loop spins, with the same result"
+    },
+    {
+      "fingerprint": "src/shell_pages/runner.nim:SDL:8879ec1152e19f40:0",
+      "file": "src/shell_pages/runner.nim",
+      "line": 130,
+      "mutator": "SDL",
+      "original": "createDir(base)",
+      "replacement": "discard",
+      "class": "equivalent",
+      "reason": "the base directory is created later anyway: resetDir and createDir of the run directory make missing parents"
+    },
+    {
+      "fingerprint": "src/shell_pages/runner.nim:CVR:4899475630fb1e7d:0",
+      "file": "src/shell_pages/runner.nim",
+      "line": 131,
+      "mutator": "CVR",
+      "original": "1000000",
+      "replacement": "1000001",
+      "class": "equivalent",
+      "reason": "the temporary directory name only has to be unused; its time part is not observable, and pid plus microseconds already keeps it unique"
+    },
+    {
+      "fingerprint": "src/shell_pages/runner.nim:SDL:8563409ef2b3b885:0",
+      "file": "src/shell_pages/runner.nim",
+      "line": 132,
+      "mutator": "SDL",
+      "original": "inc n",
+      "replacement": "discard",
+      "class": "unreached",
+      "reason": "the counter only separates two run directories made in the same microsecond, which the public API cannot arrange"
+    },
+    {
+      "fingerprint": "src/shell_pages/spec.nim:CVR:e7347ef01c396c2c:0",
+      "file": "src/shell_pages/spec.nim",
+      "line": 50,
+      "mutator": "CVR",
+      "original": "0",
+      "replacement": "1",
+      "class": "spec_question",
+      "reason": "SpecRow.line is public but no MCLI or SHPG row says which line number a table row carries"
+    },
+    {
+      "fingerprint": "src/shell_pages/spec.nim:SDL:326e13e563d25b24:0",
+      "file": "src/shell_pages/spec.nim",
+      "line": 52,
+      "mutator": "SDL",
+      "original": "inc lineNo",
+      "replacement": "discard",
+      "class": "spec_question",
+      "reason": "same: the line number of a table row is not specified"
+    },
+    {
+      "fingerprint": "src/shell_pages/spec.nim:CVR:cf0a70b9d6a14331:0",
+      "file": "src/shell_pages/spec.nim",
+      "line": 71,
+      "mutator": "CVR",
+      "original": "0",
+      "replacement": "1",
+      "class": "spec_question",
+      "reason": "same as the previous"
+    },
+    {
+      "fingerprint": "src/shell_pages/spec.nim:ROR:b0c4e8660faad36f:0",
+      "file": "src/shell_pages/spec.nim",
+      "line": 71,
+      "mutator": "ROR",
+      "original": "i < 0",
+      "replacement": "<< -> <=>",
+      "class": "spec_question",
+      "reason": "no row says how a title whose colon is the first character (`# : tool`) gives its tool"
+    },
+    {
+      "fingerprint": "src/shell_pages/spec.nim:RVR:18989e8d4f1a4ea4:0",
+      "file": "src/shell_pages/spec.nim",
+      "line": 72,
+      "mutator": "RVR",
+      "original": "return \"\"",
+      "replacement": "<return default>",
+      "class": "equivalent",
+      "reason": "default(string) is the empty string the original returns"
+    },
+    {
+      "fingerprint": "src/shell_pages/spec.nim:CVR:f03f0666b590a053:0",
+      "file": "src/shell_pages/spec.nim",
+      "line": 128,
+      "mutator": "CVR",
+      "original": "0",
+      "replacement": "1",
+      "class": "accepted",
+      "reason": "same as the previous"
+    },
+    {
+      "fingerprint": "src/shell_pages/spec.nim:ROR:2c16e6218faf6ced:0",
+      "file": "src/shell_pages/spec.nim",
+      "line": 128,
+      "mutator": "ROR",
+      "original": "colon < 0",
+      "replacement": "<< -> <=>",
+      "class": "accepted",
+      "reason": "differs only for a reason starting with ':', where the mutant reports a missing category instead of a missing reason: the same row is named with one error, only the wording differs, and failure wording is not part of the contract"
+    },
+    {
+      "fingerprint": "src/shell_pages/spec.nim:CVR:c8ce7e7aebb3cdc4:0",
+      "file": "src/shell_pages/spec.nim",
+      "line": 129,
+      "mutator": "CVR",
+      "original": "0",
+      "replacement": "1",
+      "class": "accepted",
+      "reason": "same as the previous"
+    },
+    {
+      "fingerprint": "src/shell_pages/spec.nim:ROR:4cbcb8367e51b5fe:0",
+      "file": "src/shell_pages/spec.nim",
+      "line": 129,
+      "mutator": "ROR",
+      "original": "colon < 0",
+      "replacement": "<< -> <=>",
+      "class": "accepted",
+      "reason": "same as the previous"
+    }
+  ]
+}

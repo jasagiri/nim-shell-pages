@@ -1,7 +1,7 @@
 ## E tests for docs/specification.md SHPG-RUN-01…04: running an example in a fresh copy of a
 ## fixture tree under the fixed environment.
 
-import std/[os, strutils, times, unittest]
+import std/[os, sequtils, strutils, times, unittest]
 import shell_pages/[pages, runner]
 import ./toy_profile
 
@@ -59,9 +59,28 @@ suite "runner":
     let good = exampleOf("# T\n## Why\n```sh\ncat a.txt\n```\n```text\nalpha\n```\n")
     check checkExample(fixture, work, good).ok
     let wrongOut = exampleOf("# T\n## Why\n```sh\ncat a.txt\n```\n```text\nbeta\n```\n")
-    check not checkExample(fixture, work, wrongOut).ok
+    let differing = checkExample(fixture, work, wrongOut)
+    check not differing.ok
+    check "line " & $wrongOut.command.line in differing.message
+    check "beta" in differing.message and "alpha" in differing.message
     let wrongExit = exampleOf("# T\n## Why\n```sh\n# exit: 1\ncat a.txt\n```\n```text\nalpha\n```\n")
     check "exit 0, expected 1" in checkExample(fixture, work, wrongExit).message
+
+  # SPEC: SHPG-RUN-02
+  test "SHPG-RUN-02 Given a fresh copy, when a command reads HOME, then it is an existing directory inside the copy":
+    makeFixture()
+    copyFixture(fixture, work)
+    let r = run(work, "test -d \"$HOME\" && echo $HOME")
+    check r.exitCode == 0
+    check r.stdout.strip == work / ".home"
+
+  # SPEC: SHPG-RUN-01
+  test "SHPG-RUN-01 Given a work directory that does not exist, when it is reset, then it exists and is empty":
+    makeFixture()
+    let fresh = root / "never-made" / "deep"
+    resetDir(fresh)
+    check dirExists(fresh)
+    check toSeq(walkDir(fresh)).len == 0
 
   # SPEC: SHPG-RUN-03
   test "SHPG-RUN-03 Given an idempotent example, when the second run changes the tree, then it fails":
@@ -69,7 +88,10 @@ suite "runner":
     let stable = exampleOf("# T\n## Why\n```sh idempotent\nmkdir -p d\n```\n```text\n```\n")
     check checkExample(fixture, work, stable).ok
     let drift = exampleOf("# T\n## Why\n```sh idempotent\necho x >> log\n```\n```text\n```\n")
-    check "second run changed the tree" in checkExample(fixture, work, drift).message
+    let drifted = checkExample(fixture, work, drift)
+    check not drifted.ok
+    check "second run changed the tree" in drifted.message
+    check "line " & $drift.command.line in drifted.message
 
 var ranCommands: seq[string]  ## outside the work tree, which the idempotence check compares
 var ranDirs: seq[string]
@@ -80,6 +102,16 @@ proc fakeRun(work, command: string): RunResult {.raises: [OSError, IOError].} =
   ranCommands.add command.strip
   ranDirs.add work
   RunResult(stdout: "fake\n", stderr: "", exitCode: 0)
+
+var exitScript: seq[int]  ## the status of the n-th run, then 0
+var scriptPos = 0
+
+proc scriptedRun(work, command: string): RunResult {.raises: [OSError, IOError].} =
+  ## A runner whose n-th run ends with the n-th status of exitScript: a command that behaves
+  ## differently from one run to the next, as a clock or a counter outside the copy would.
+  let code = (if scriptPos < exitScript.len: exitScript[scriptPos] else: 0)
+  inc scriptPos
+  RunResult(stdout: "", stderr: "", exitCode: code)
 
 suite "runner with another run routine":
   # SPEC: SHPG-RUN-04
@@ -122,6 +154,31 @@ suite "runner with another run routine":
     let ex = exampleOf("# T\n## Why\n```sh\nhello\n```\n```text\nhello!\n```\n")
     check checkExampleWith(fixture, work, ex, withSuffix).ok
 
+suite "idempotence runs":
+  const idem = "# T\n## Why\n```sh idempotent\ntrue\n```\n```text\n```\n"
+
+  # SPEC: SHPG-RUN-03
+  test "SHPG-RUN-03 Given an idempotent example whose first run ends differently, when checked, then it fails and names the line":
+    makeFixture()
+    let ex = exampleOf(idem)
+    exitScript = @[0, 1, 0]  # the plain run, then the first and the second idempotence run
+    scriptPos = 0
+    let r = checkExampleWith(fixture, work, ex, scriptedRun)
+    check not r.ok
+    check "idempotent line " & $ex.command.line in r.message
+    check "first run exit 1" in r.message
+
+  # SPEC: SHPG-RUN-03
+  test "SHPG-RUN-03 Given an idempotent example whose second run ends differently, when checked, then it fails and names the line":
+    makeFixture()
+    let ex = exampleOf(idem)
+    exitScript = @[0, 0, 1]
+    scriptPos = 0
+    let r = checkExampleWith(fixture, work, ex, scriptedRun)
+    check not r.ok
+    check "idempotent line " & $ex.command.line in r.message
+    check "second run exit 1" in r.message
+
 suite "bounded runs":
   # SPEC: SHPG-RUN-05
   test "SHPG-RUN-05 Given a command that does not end, when its time limit passes, then it is stopped with timedOutExitCode":
@@ -131,6 +188,7 @@ suite "bounded runs":
     let started = epochTime()
     let r = run(w, "echo begun; sleep 30", timeoutMs = 500)
     check r.exitCode == timedOutExitCode
+    check r.exitCode == 1001  # the value SHPG-RUN-05 states
     check r.stdout == "begun\n"
     check "timed out" in r.stderr
     check epochTime() - started < 10.0

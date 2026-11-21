@@ -59,6 +59,7 @@ suite "container":
       let w = fresh()
       let r = runInContainer(image, w, "touch ran", caps)
       check r.exitCode == refusedExitCode
+      check r.exitCode == 1000  # the value SHPG-CONTAINER-07 states
       check r.stdout == ""
       check "refused" in r.stderr
       check not fileExists(w / "ran")
@@ -71,6 +72,7 @@ suite "container":
     check runInContainer("--privileged", fresh(), "true", []).exitCode == refusedExitCode
     check runInContainer(image, "a:b", "true", []).exitCode == refusedExitCode
     check runInContainer(image, "a,b", "true", []).exitCode == refusedExitCode
+    check runInContainer(image, "", "true", []).exitCode == refusedExitCode
 
   # SPEC: SHPG-CONTAINER-09
   test "SHPG-CONTAINER-09 Given a command that does not end, when the time limit passes, then the run stops with timedOutExitCode and no container is left":

@@ -17,3 +17,7 @@ task test, "all tests":
   for t in testFiles():
     echo "== " & t
     exec "nim c -r --hints:off " & t
+
+task specCoverage, "G1 table":
+  exec "../nim-spec-coverage/bin/tools/spec_coverage . --spec-table docs/specification.md" &
+    " > docs/quality/g1-spec-coverage.md"

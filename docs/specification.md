@@ -20,8 +20,8 @@ what this package adds.
 
 | ID | Statement |
 |---|---|
-| SHPG-RUN-01 | A fixture is copied with each `_gitignore` renamed `.gitignore` and an empty `.git` directory at the root. A work directory that already exists is kept and emptied, not removed and made again, so a container that mounts it sees the new copy. |
-| SHPG-RUN-02 | A command runs with `sh -c` in the copy, under the fixed environment, with standard output, standard error and status kept apart. |
+| SHPG-RUN-01 | A fixture is copied with each `_gitignore` renamed `.gitignore` and an empty `.git` directory at the root. A work directory that already exists is kept and emptied, not removed and made again, so a container that mounts it sees the new copy; one that does not exist is created empty. |
+| SHPG-RUN-02 | A command runs with `sh -c` in the copy, with empty standard input and standard output, standard error and status kept apart, under the fixed environment: the caller's `PATH` and nothing else from it, `HOME` an existing directory `.home` inside the copy (`XDG_CONFIG_HOME` under it), `LC_ALL=C.UTF-8`, `TZ=UTC`, `NO_COLOR=1`, `TERM=dumb`, `PAGER=cat`, `BAT_PAGER` empty. |
 | SHPG-RUN-03 | An example passes when its output and status match; a differing output, a differing status, or a second idempotent run that changes the tree fails and names the line. |
 | SHPG-RUN-04 | `checkExampleWith` checks an example as SHPG-RUN-03 states it, with every command (the example, its classic partner, both idempotence runs) run by the routine it is given; `checkExample` is `checkExampleWith` with the local `run`. |
 | SHPG-RUN-05 | `run` (and every run, through `runBounded`) gives back standard output and error whole whatever their size, and stops a command still going after its time limit (`defaultTimeoutMs` = 120 s when not given) with status `timedOutExitCode` (1001) and `timed out` on standard error; a command that itself ends with 137 keeps 137. |
