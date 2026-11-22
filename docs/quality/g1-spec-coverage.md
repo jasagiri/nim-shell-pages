@@ -15,12 +15,15 @@ Also from the IDs in the first cell of the table rows of
 | SHPG-PROFILE-03 | tests/test_profile.nim (1) |
 | SHPG-PROFILE-04 | tests/test_profile.nim (2) |
 | SHPG-PROFILE-05 | tests/test_profile.nim (1) |
+| SHPG-PAGE-01 | tests/test_profile.nim (2) |
+| SHPG-SPEC-01 | tests/test_profile.nim (1) |
 | SHPG-RUN-01 | tests/test_runner.nim (3) |
 | SHPG-RUN-02 | tests/test_runner.nim (2) |
 | SHPG-RUN-03 | tests/test_runner.nim (4) |
 | SHPG-RUN-04 | tests/test_runner.nim (3) |
 | SHPG-RUN-05 | tests/test_runner.nim (2) |
 | SHPG-RUN-06 | tests/test_runner.nim (1) |
+| SHPG-RUN-07 | tests/test_runner.nim (1) |
 | SHPG-CONTAINER-01 | tests/test_container.nim (1) |
 | SHPG-CONTAINER-02 | tests/test_container.nim (1) |
 | SHPG-CONTAINER-03 | tests/test_container.nim (1) |
@@ -31,8 +34,9 @@ Also from the IDs in the first cell of the table rows of
 | SHPG-CONTAINER-08 | tests/test_container.nim (1) |
 | SHPG-CONTAINER-09 | tests/test_container.nim (1) |
 | SHPG-CONTAINER-10 | tests/test_container.nim (1) |
+| SHPG-CONTAINER-11 | tests/test_container.nim (1) |
 
-Declared: 21  Covered: 21  Uncovered: 0
+Declared: 25  Covered: 25  Uncovered: 0
 
 ## Uncovered declared IDs
 

@@ -31,16 +31,6 @@
       "reason": "removes a stale directory of the same name before creating it; pid plus microseconds never collides with an earlier one, so there is nothing to remove"
     },
     {
-      "fingerprint": "src/shell_pages/container.nim:SDL:ac6aeb2a864586b2:0",
-      "file": "src/shell_pages/container.nim",
-      "line": 54,
-      "mutator": "SDL",
-      "original": "removeDir(io)",
-      "replacement": "discard",
-      "class": "spec_question",
-      "reason": "no SHPG row says a container run leaves no temporary directory behind"
-    },
-    {
       "fingerprint": "src/shell_pages/container.nim:LOR:bd1da42686afbb38:0",
       "file": "src/shell_pages/container.nim",
       "line": 72,
@@ -131,29 +121,9 @@
       "reason": "default(string) is the empty string the original returns"
     },
     {
-      "fingerprint": "src/shell_pages/dataset.nim:CVR:14730aa123c452ed:0",
-      "file": "src/shell_pages/dataset.nim",
-      "line": 46,
-      "mutator": "CVR",
-      "original": "0",
-      "replacement": "1",
-      "class": "spec_question",
-      "reason": "same as the previous"
-    },
-    {
-      "fingerprint": "src/shell_pages/dataset.nim:ROR:798e0027a4b951c3:0",
-      "file": "src/shell_pages/dataset.nim",
-      "line": 46,
-      "mutator": "ROR",
-      "original": "i < 0",
-      "replacement": "<< -> <=>",
-      "class": "spec_question",
-      "reason": "no row says how a title whose colon is the first character gives its tool (dataset side of the same question as spec.nim line 71)"
-    },
-    {
       "fingerprint": "src/shell_pages/dataset.nim:CVR:89c9a86c4d04e713:0",
       "file": "src/shell_pages/dataset.nim",
-      "line": 72,
+      "line": 68,
       "mutator": "CVR",
       "original": "-1",
       "replacement": "0",
@@ -163,7 +133,7 @@
     {
       "fingerprint": "src/shell_pages/dataset.nim:CVR:31c84b398a9783ca:0",
       "file": "src/shell_pages/dataset.nim",
-      "line": 107,
+      "line": 103,
       "mutator": "CVR",
       "original": "0",
       "replacement": "1",
@@ -191,19 +161,9 @@
       "reason": "the dropped last character is the closing parenthesis, which strip removes anyway for a well-formed Status line"
     },
     {
-      "fingerprint": "src/shell_pages/pages.nim:CVR:290d1b6f7aa6f818:0",
-      "file": "src/shell_pages/pages.nim",
-      "line": 135,
-      "mutator": "CVR",
-      "original": "3",
-      "replacement": "4",
-      "class": "spec_question",
-      "reason": "MCLI-PAGE-03 does not say whether `# exit: 0001` (zero-padded, value in 0..255) is refused"
-    },
-    {
       "fingerprint": "src/shell_pages/pages.nim:CVR:81f28a587c42ce58:0",
       "file": "src/shell_pages/pages.nim",
-      "line": 158,
+      "line": 164,
       "mutator": "CVR",
       "original": "0",
       "replacement": "1",
@@ -213,7 +173,7 @@
     {
       "fingerprint": "src/shell_pages/pages.nim:ROR:d6933d61f0ae8ee4:0",
       "file": "src/shell_pages/pages.nim",
-      "line": 158,
+      "line": 164,
       "mutator": "ROR",
       "original": "nl < 0",
       "replacement": "<< -> <=>",
@@ -223,7 +183,7 @@
     {
       "fingerprint": "src/shell_pages/pages.nim:CVR:23da1303bd01c1a2:0",
       "file": "src/shell_pages/pages.nim",
-      "line": 183,
+      "line": 189,
       "mutator": "CVR",
       "original": "0",
       "replacement": "1",
@@ -233,7 +193,7 @@
     {
       "fingerprint": "src/shell_pages/pages.nim:ROR:50c9a0ee46367b87:0",
       "file": "src/shell_pages/pages.nim",
-      "line": 190,
+      "line": 196,
       "mutator": "ROR",
       "original": "k == bkClassic",
       "replacement": "<== -> !=>",
@@ -243,22 +203,12 @@
     {
       "fingerprint": "src/shell_pages/pages.nim:CVR:23da1303bd01c1a2:1",
       "file": "src/shell_pages/pages.nim",
-      "line": 196,
+      "line": 202,
       "mutator": "CVR",
       "original": "0",
       "replacement": "1",
       "class": "equivalent",
       "reason": "the error is empty or a long message, never one character"
-    },
-    {
-      "fingerprint": "src/shell_pages/runner.nim:CVR:71ce2676aaedd6e4:0",
-      "file": "src/shell_pages/runner.nim",
-      "line": 25,
-      "mutator": "CVR",
-      "original": "120000",
-      "replacement": "120001",
-      "class": "accepted",
-      "reason": "defaultTimeoutMs is stated as 120 s in SHPG-RUN-05; telling 120000 from 120001 needs a 120-second test or a test that pins the constant, which the test rules do not allow"
     },
     {
       "fingerprint": "src/shell_pages/runner.nim:AOR:3639fa30ebae35e2:0",
@@ -289,26 +239,6 @@
       "replacement": "discard",
       "class": "equivalent",
       "reason": "removes a stale directory of the same name before creating it; pid plus microseconds never collides with an earlier one, so there is nothing to remove"
-    },
-    {
-      "fingerprint": "src/shell_pages/runner.nim:SDL:ac6aeb2a864586b2:0",
-      "file": "src/shell_pages/runner.nim",
-      "line": 39,
-      "mutator": "SDL",
-      "original": "removeDir(io)",
-      "replacement": "discard",
-      "class": "spec_question",
-      "reason": "no SHPG row says a run leaves no temporary directory behind; killing this needs that promise (and a way to observe the directory)"
-    },
-    {
-      "fingerprint": "src/shell_pages/runner.nim:SDL:a4387596d8b361c8:0",
-      "file": "src/shell_pages/runner.nim",
-      "line": 47,
-      "mutator": "SDL",
-      "original": "p.close()",
-      "replacement": "discard",
-      "class": "spec_question",
-      "reason": "no SHPG row says the process handle (its file descriptors) is closed after a run"
     },
     {
       "fingerprint": "src/shell_pages/runner.nim:ROR:e5e32a2f2c01db1e:0",
@@ -371,49 +301,9 @@
       "reason": "the counter only separates two run directories made in the same microsecond, which the public API cannot arrange"
     },
     {
-      "fingerprint": "src/shell_pages/spec.nim:CVR:e7347ef01c396c2c:0",
-      "file": "src/shell_pages/spec.nim",
-      "line": 50,
-      "mutator": "CVR",
-      "original": "0",
-      "replacement": "1",
-      "class": "spec_question",
-      "reason": "SpecRow.line is public but no MCLI or SHPG row says which line number a table row carries"
-    },
-    {
-      "fingerprint": "src/shell_pages/spec.nim:SDL:326e13e563d25b24:0",
-      "file": "src/shell_pages/spec.nim",
-      "line": 52,
-      "mutator": "SDL",
-      "original": "inc lineNo",
-      "replacement": "discard",
-      "class": "spec_question",
-      "reason": "same: the line number of a table row is not specified"
-    },
-    {
-      "fingerprint": "src/shell_pages/spec.nim:CVR:cf0a70b9d6a14331:0",
-      "file": "src/shell_pages/spec.nim",
-      "line": 71,
-      "mutator": "CVR",
-      "original": "0",
-      "replacement": "1",
-      "class": "spec_question",
-      "reason": "same as the previous"
-    },
-    {
-      "fingerprint": "src/shell_pages/spec.nim:ROR:b0c4e8660faad36f:0",
-      "file": "src/shell_pages/spec.nim",
-      "line": 71,
-      "mutator": "ROR",
-      "original": "i < 0",
-      "replacement": "<< -> <=>",
-      "class": "spec_question",
-      "reason": "no row says how a title whose colon is the first character (`# : tool`) gives its tool"
-    },
-    {
       "fingerprint": "src/shell_pages/spec.nim:RVR:18989e8d4f1a4ea4:0",
       "file": "src/shell_pages/spec.nim",
-      "line": 72,
+      "line": 71,
       "mutator": "RVR",
       "original": "return \"\"",
       "replacement": "<return default>",
@@ -423,7 +313,7 @@
     {
       "fingerprint": "src/shell_pages/spec.nim:CVR:f03f0666b590a053:0",
       "file": "src/shell_pages/spec.nim",
-      "line": 128,
+      "line": 127,
       "mutator": "CVR",
       "original": "0",
       "replacement": "1",
@@ -433,7 +323,7 @@
     {
       "fingerprint": "src/shell_pages/spec.nim:ROR:2c16e6218faf6ced:0",
       "file": "src/shell_pages/spec.nim",
-      "line": 128,
+      "line": 127,
       "mutator": "ROR",
       "original": "colon < 0",
       "replacement": "<< -> <=>",
@@ -443,7 +333,7 @@
     {
       "fingerprint": "src/shell_pages/spec.nim:CVR:c8ce7e7aebb3cdc4:0",
       "file": "src/shell_pages/spec.nim",
-      "line": 129,
+      "line": 128,
       "mutator": "CVR",
       "original": "0",
       "replacement": "1",
@@ -453,7 +343,7 @@
     {
       "fingerprint": "src/shell_pages/spec.nim:ROR:4cbcb8367e51b5fe:0",
       "file": "src/shell_pages/spec.nim",
-      "line": 129,
+      "line": 128,
       "mutator": "ROR",
       "original": "colon < 0",
       "replacement": "<< -> <=>",
