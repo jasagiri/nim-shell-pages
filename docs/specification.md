@@ -16,6 +16,13 @@ what this package adds.
 | SHPG-PROFILE-04 | A dataset record takes its ID namespace and `area`, its spec IDs, its `kind` for the keep record, its instructions, its labels and its system message from the profile, and its file path from `pagesDir`. |
 | SHPG-PROFILE-05 | An idempotent example's record carries the profile's idempotence spec ID besides the example ID. |
 
+## Pages and spec tables
+
+| ID | Statement |
+|---|---|
+| SHPG-PAGE-01 | A page's tool is the text after the last `: ` of its title, stripped, also when the title begins with `: `; the whole title when it has none. The spec-table check reads the TOOL of its IDs from it, and the dataset's keep and rewrite instructions name it. |
+| SHPG-SPEC-01 | Each row of a spec table, and each error about a malformed row, carries the 1-based number of the line it stands on in the text given to the parser. |
+
 ## Local runner
 
 | ID | Statement |
@@ -26,6 +33,7 @@ what this package adds.
 | SHPG-RUN-04 | `checkExampleWith` checks an example as SHPG-RUN-03 states it, with every command (the example, its classic partner, both idempotence runs) run by the routine it is given; `checkExample` is `checkExampleWith` with the local `run`. |
 | SHPG-RUN-05 | `run` (and every run, through `runBounded`) gives back standard output and error whole whatever their size, and stops a command still going after its time limit (`defaultTimeoutMs` = 120 s when not given) with status `timedOutExitCode` (1001) and `timed out` on standard error; a command that itself ends with 137 keeps 137. |
 | SHPG-RUN-06 | `checkExampleWith` gives every run its own fresh copy of the fixture in a directory under `work` that no earlier run used (the two idempotence runs share one copy), and removes it after the check: a container runtime that shares host directories into a virtual machine can keep a stale view of a reused path. |
+| SHPG-RUN-07 | A run, whether it ends, times out or fails, leaves none of its own temporary files or directories behind and closes the files of the process it started. |
 
 ## Container runner
 
@@ -41,3 +49,4 @@ what this package adds.
 | SHPG-CONTAINER-08 | An empty image or one starting with `-`, and a work directory that is empty or contains `:` or `,`, are refused the same way. |
 | SHPG-CONTAINER-09 | A run still going after its time limit (`timeoutMs`, `defaultTimeoutMs` = 120 s when not given) is stopped: podman is killed, the container is removed, and the result has status `timedOutExitCode` (1001) with `timed out` on standard error. |
 | SHPG-CONTAINER-10 | Standard output and standard error come back whole whatever their size, each kept apart. |
+| SHPG-CONTAINER-11 | A container run, whether it ends, times out or is refused, leaves none of its own temporary directories behind. |

@@ -1,4 +1,4 @@
-## E tests for docs/specification.md SHPG-CONTAINER-01…10: running a command inside a podman
+## E tests for docs/specification.md SHPG-CONTAINER-01…11: running a command inside a podman
 ## container. Needs podman and the image below (pulled on first use).
 
 import std/[os, osproc, strutils, times, unittest]
@@ -93,3 +93,16 @@ suite "container":
     check r.exitCode == 0
     check r.stdout.len == 300000
     check r.stderr.len == 300000
+
+  # SPEC: SHPG-CONTAINER-11
+  test "SHPG-CONTAINER-11 Given container runs that end, time out or are refused, when they return, then no temporary directory of theirs is left":
+    proc ours(): int =
+      for kind, path in walkDir(getTempDir()):
+        if path.extractFilename.startsWith("shpg-cid-" & $getCurrentProcessId() & "-"): inc result
+    check runInContainer(image, fresh(), "echo done", []).stdout == "done\n"
+    check ours() == 0
+    check runInContainer(image, fresh(), "sleep 600", [], timeoutMs = 3_000).exitCode == timedOutExitCode
+    check ours() == 0
+    check runInContainer(image, fresh(), "true", ["SYS_PTRACE"]).exitCode == refusedExitCode
+    check ours() == 0
+

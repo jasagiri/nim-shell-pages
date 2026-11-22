@@ -111,6 +111,12 @@ func parsePage*(text: string): Page {.raises: [].} =
     elif result.sections.len > 0:
       result.sections[^1].body.add raw & "\n"
 
+func toolName*(page: Page): string {.raises: [].} =
+  ## The tool a page is about: the text after the last ": " of its title, stripped, also when the
+  ## title begins with ": "; the whole title when it has none (SHPG-PAGE-01).
+  let i = page.title.rfind(": ")
+  (if i < 0: page.title else: page.title[i + 2 .. ^1]).strip
+
 func isSpecId(w: string; profile: PageProfile): bool {.raises: [].} =
   ## <prefix>-<TOOL>-NN: TOOL is upper-case letters and digits, NN two digits.
   let parts = w.split('-')

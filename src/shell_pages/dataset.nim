@@ -41,10 +41,6 @@ func answer(ex: Example): string {.raises: [].} =
   result = "```sh\n" & withoutHeader(ex.command.body) & "```\n\nOutput:\n```text\n" & ex.expected & "```"
   if ex.exitCode != 0: result.add "\n\nExit status: " & $ex.exitCode
 
-func tool(page: Page): string {.raises: [].} =
-  let i = page.title.rfind(": ")
-  if i < 0: page.title else: page.title[i + 2 .. ^1]
-
 func pad2(n: int): string {.raises: [].} = (if n < 10: "0" & $n else: $n)
 
 func recordsOf*(profile: PageProfile; name, text: string): seq[Record] {.raises: [].} =
@@ -61,7 +57,7 @@ func recordsOf*(profile: PageProfile; name, text: string): seq[Record] {.raises:
       sectionBody(page, profile.differencesHeading),
     specIds: @[profile.pageSpecId], sources: sources, files: @[file])
   result.add Record(id: profile.keepKind & ":" & profile.area & "/" & topic, kind: profile.keepKind, topic: topic,
-    instruction: profile.keepPrefix & tool(page) & profile.keepSuffix,
+    instruction: profile.keepPrefix & toolName(page) & profile.keepSuffix,
     input: "", output: sectionBody(page, profile.keepHeading),
     specIds: @[profile.pageSpecId], sources: sources, files: @[file])
   var nTask, nRewrite, nPitfall = 0
@@ -76,7 +72,7 @@ func recordsOf*(profile: PageProfile; name, text: string): seq[Record] {.raises:
     if ex.classic.isSome:
       inc nRewrite
       result.add Record(id: "rewrite:" & profile.area & "/" & topic & "#" & pad2(nRewrite), kind: "rewrite", topic: topic,
-        instruction: profile.rewritePrefix & tool(page) & profile.rewriteSuffix,
+        instruction: profile.rewritePrefix & toolName(page) & profile.rewriteSuffix,
         input: "```sh\n" & withoutHeader(ex.classic.get.body) & "```",
         output: answer(ex) & "\n\n" & profile.differsLabel & "\n" &
           sectionBody(page, profile.differencesHeading),

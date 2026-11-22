@@ -67,8 +67,7 @@ func toolOf(page: Page): string {.raises: [].} =
   ## The upper-cased tool of the title (`# Find files by name: fd` -> FD); "" when the part after
   ## the colon is not a single word (a page about several tools), and then the table picks the
   ## name, the same for all its rows.
-  let i = page.title.rfind(": ")
-  let name = (if i < 0: page.title else: page.title[i + 2 .. ^1]).strip
+  let name = toolName(page)
   if name.len == 0 or not name.allCharsInSet(Letters + Digits): return ""
   name.toUpperAscii
 

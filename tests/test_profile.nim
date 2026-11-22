@@ -1,4 +1,4 @@
-## E tests for docs/specification.md SHPG-PROFILE-01…05: every repository-specific value of the
+## E tests for docs/specification.md SHPG-PROFILE-01…05, SHPG-PAGE-01 and SHPG-SPEC-01: every repository-specific value of the
 ## parser, the spec-table check and the dataset derivation comes from the PageProfile.
 
 import std/[json, strutils, unittest]
@@ -143,3 +143,29 @@ fixed
     check rs.len == 3
     check rs[2].kind == "task"
     check rs[2].specIds == @["T-EX", "T-IDEM"]
+
+suite "pages and spec tables":
+  # SPEC: SHPG-PAGE-01
+  test "SHPG-PAGE-01 Given titles with and without a colon, when the tool is read, then it is the text after the last colon, also when the title begins with one":
+    check toolName(parsePage("# Find files: fd\n")) == "fd"
+    check toolName(parsePage("# A: b: qq \n")) == "qq"
+    check toolName(parsePage("# : qq\n")) == "qq"
+    check toolName(parsePage("# qq\n")) == "qq"
+
+  # SPEC: SHPG-PAGE-01
+  test "SHPG-PAGE-01 Given a title that begins with its colon, when derived and checked, then the dataset and the spec table use its tool":
+    let colonFirst = datasetPage.replace("# Find: qq", "# : qq")
+    let rs = recordsOf(toy, "qq.md", colonFirst)
+    check rs[1].instruction == "Gotchas of qq?"
+    check specErrors(parsePage(page.replace("# Tool: qq", "# : qq")), toy, table).len == 0
+
+  # SPEC: SHPG-SPEC-01
+  test "SHPG-SPEC-01 Given a spec table after other lines, when parsed, then each row carries the 1-based number of its line":
+    let t = parseSpecTable("intro\n\n" & table)
+    check t.errors.len == 0
+    check t.rows.len == 3
+    check t.rows[0].line == 5
+    check t.rows[2].line == 7
+    let bad = parseSpecTable(table & "| ZZ-QQ-04 | U1 | short |\n")
+    check bad.errors == @["line 6: a row needs 4 cells (ID, 箇所, 主張, 確かめ)"]
+

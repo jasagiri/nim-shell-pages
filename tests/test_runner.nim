@@ -1,4 +1,4 @@
-## E tests for docs/specification.md SHPG-RUN-01…04: running an example in a fresh copy of a
+## E tests for docs/specification.md SHPG-RUN-01…07: running an example in a fresh copy of a
 ## fixture tree under the fixed environment.
 
 import std/[os, sequtils, strutils, times, unittest]
@@ -193,6 +193,7 @@ suite "bounded runs":
     check "timed out" in r.stderr
     check epochTime() - started < 10.0
     check run(w, "exit 137").exitCode == 137
+    check defaultTimeoutMs == 120_000  # the value SHPG-RUN-05 states
 
   # SPEC: SHPG-RUN-05
   test "SHPG-RUN-05 Given more output than a pipe holds on both streams, when run, then all of it comes back":
@@ -203,3 +204,23 @@ suite "bounded runs":
     check r.exitCode == 0
     check r.stdout.len == 300000
     check r.stderr.len == 300000
+
+  # SPEC: SHPG-RUN-07
+  test "SHPG-RUN-07 Given many runs, when they end, then no temporary directory of theirs is left and no file of theirs stays open":
+    let w = getTempDir() / "shpg-run07-" & $getCurrentProcessId()
+    createDir(w)
+    defer: removeDir(w)
+    proc ours(): int =
+      for kind, path in walkDir(getTempDir()):
+        if path.extractFilename.startsWith("shpg-run-" & $getCurrentProcessId() & "-"): inc result
+    proc openFiles(): int =
+      for kind, path in walkDir("/dev/fd"): inc result
+    discard run(w, "true")  # the first run may open files that stay for the process's life
+    let before = openFiles()
+    for i in 1 .. 40:
+      check run(w, "echo " & $i).stdout == $i & "\n"
+    check ours() == 0
+    check openFiles() == before
+    discard run(w, "sleep 5", timeoutMs = 200)
+    check ours() == 0
+
