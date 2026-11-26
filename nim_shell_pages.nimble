@@ -8,3 +8,6 @@ installExt    = @["nim"]
 
 # Dependencies
 requires "nim >= 2.4.2"
+
+task test, "Run the test suite":
+  exec "nim test"
